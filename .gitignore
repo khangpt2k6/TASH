@@ -14,10 +14,9 @@ venv/
 env/
 pip-wheel-metadata/
 
-# Environment variables
+# Environment variables (including .env.example - never tracked)
 .env
 .env.*
-!.env.example
 
 # Database files
 *.db
