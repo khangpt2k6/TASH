@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import { GiDna2 } from 'react-icons/gi'
+import { TbDna2 } from 'react-icons/tb'
 import { FcGoogle } from 'react-icons/fc'
 import { useAuth } from '../contexts/AuthContext'
 
@@ -38,10 +38,10 @@ export default function AuthScreen() {
   }
 
   return (
-    <div className="auth-screen">
+    <div className="auth-screen" data-testid="auth-screen">
       <div className="auth-card">
         <div className="auth-logo">
-          <div className="logo-mark"><GiDna2 size={18} /></div>
+          <div className="logo-mark" data-testid="auth-logo"><TbDna2 size={20} /></div>
           <div>
             <div className="logo-name">TASH</div>
             <div className="logo-sub">Aging Atlas AI</div>
@@ -53,7 +53,7 @@ export default function AuthScreen() {
           {mode === 'signin' ? 'Sign in to access your chats.' : 'Sign up to start chatting with TASH.'}
         </p>
 
-        <button type="button" className="auth-google" onClick={google}>
+        <button type="button" className="auth-google" onClick={google} data-testid="google-btn">
           <FcGoogle size={18} /> Continue with Google
         </button>
 
@@ -93,11 +93,11 @@ export default function AuthScreen() {
         <div className="auth-switch">
           {mode === 'signin' ? (
             <>No account?{' '}
-              <button type="button" onClick={() => { setMode('signup'); setError(null) }}>Sign up</button>
+              <button type="button" data-testid="switch-signup" onClick={() => { setMode('signup'); setError(null) }}>Sign up</button>
             </>
           ) : (
             <>Already have an account?{' '}
-              <button type="button" onClick={() => { setMode('signin'); setError(null) }}>Sign in</button>
+              <button type="button" data-testid="switch-signin" onClick={() => { setMode('signin'); setError(null) }}>Sign in</button>
             </>
           )}
         </div>
