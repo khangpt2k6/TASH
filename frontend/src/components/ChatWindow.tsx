@@ -34,55 +34,35 @@ export default function ChatWindow({ messages, streaming, isLoading, onPrompt, c
         <WelcomeScreen onPrompt={onPrompt} />
       ) : (
         <div className="messages-wrap">
-          {messages.map(msg => (
-            <MessageBubble key={msg.id} message={msg} />
-          ))}
+          {messages.map(msg => <MessageBubble key={msg.id} message={msg} />)}
 
           {isLoading && streaming && (
-            <>
-              {streaming.thinking && !streaming.text && streaming.toolSteps.length === 0 && (
-                <div className="msg-group">
-                  <div className="assistant-label">
-                    <div className="tash-avatar"><GiDna2 size={11} /></div>
-                    <span className="assistant-name">TASH</span>
-                  </div>
-                  <div className="thinking">
-                    <div className="thinking-dot" />
-                    <div className="thinking-dot" />
-                    <div className="thinking-dot" />
-                  </div>
-                </div>
-              )}
+            <div className="msg-group">
+              <div className="assist-row">
+                <div className="tash-mark"><GiDna2 size={11} /></div>
+                <span className="assist-name">TASH</span>
+              </div>
 
               {streaming.toolSteps.length > 0 && (
-                <div className="msg-group">
-                  <div className="assistant-label">
-                    <div className="tash-avatar"><GiDna2 size={11} /></div>
-                    <span className="assistant-name">TASH</span>
+                <ToolSteps steps={streaming.toolSteps} />
+              )}
+
+              {!streaming.text && streaming.toolSteps.length === 0 && (
+                <div className="thinking-row">
+                  <div className="thinking-dots">
+                    <div className="thinking-dot" />
+                    <div className="thinking-dot" />
+                    <div className="thinking-dot" />
                   </div>
-                  <ToolSteps steps={streaming.toolSteps} />
-                  {streaming.text && (
-                    <div className="assistant-body" style={{ marginTop: 8 }}>
-                      {streaming.text}
-                      <span className="cursor" />
-                    </div>
-                  )}
                 </div>
               )}
 
-              {streaming.text && streaming.toolSteps.length === 0 && (
-                <div className="msg-group">
-                  <div className="assistant-label">
-                    <div className="tash-avatar"><GiDna2 size={11} /></div>
-                    <span className="assistant-name">TASH</span>
-                  </div>
-                  <div className="assistant-body">
-                    {streaming.text}
-                    <span className="cursor" />
-                  </div>
+              {streaming.text && (
+                <div className="assist-body">
+                  {streaming.text}<span className="cursor" />
                 </div>
               )}
-            </>
+            </div>
           )}
 
           <div ref={bottomRef} />

@@ -12,17 +12,14 @@ function CodeBlock({ className, children }: { className?: string; children: Reac
   const { theme } = useTheme()
   const match = /language-(\w+)/.exec(className || '')
   if (!match) return <code className={className}>{children}</code>
-
   return (
     <SyntaxHighlighter
       style={theme === 'dark' ? oneDark : oneLight}
       language={match[1]}
       PreTag="div"
       customStyle={{
-        margin: '12px 0',
-        borderRadius: '8px',
-        fontSize: '12.5px',
-        border: '1px solid var(--border)',
+        margin: '12px 0', borderRadius: '9px',
+        fontSize: '12.5px', border: '1px solid var(--border)',
       }}
     >
       {String(children).replace(/\n$/, '')}
@@ -52,18 +49,16 @@ export default function MessageBubble({ message, streamText, isStreaming }: Prop
 
   return (
     <div className="msg-group" data-testid="assistant-message">
-      <div className="assistant-label">
-        <div className="tash-avatar">
-          <GiDna2 size={11} />
-        </div>
-        <span className="assistant-name">TASH</span>
+      <div className="assist-row">
+        <div className="tash-mark"><GiDna2 size={11} /></div>
+        <span className="assist-name">TASH</span>
       </div>
 
       {message.tool_steps && message.tool_steps.length > 0 && (
         <ToolSteps steps={message.tool_steps} />
       )}
 
-      <div className="assistant-body">
+      <div className="assist-body">
         <ReactMarkdown
           remarkPlugins={[remarkGfm]}
           components={{ code: CodeBlock as never }}

@@ -17,28 +17,23 @@ export default function Sidebar({ conversations, selectedId, onSelect, onNew, on
 
   return (
     <aside className="sidebar">
-      <div className="sidebar-top">
-        <div className="logo">
-          <div className="logo-icon">
-            <GiDna2 size={14} />
-          </div>
-          <div>
-            <div className="logo-name">TASH</div>
-            <div className="logo-tag">Aging Atlas AI</div>
-          </div>
+      <div className="sidebar-logo">
+        <div className="logo-mark"><GiDna2 size={14} /></div>
+        <div className="logo-words">
+          <div className="logo-name">TASH</div>
+          <div className="logo-sub">Aging Atlas AI</div>
         </div>
-
-        <button className="new-chat-btn" onClick={onNew} data-testid="new-chat-btn">
-          <FiPlus size={14} />
-          New chat
-        </button>
       </div>
+
+      <button className="new-chat-btn" onClick={onNew} data-testid="new-chat-btn">
+        <FiPlus size={14} /> New chat
+      </button>
 
       <div className="sidebar-label">Chats</div>
 
       <div className="sidebar-list">
         {conversations.length === 0 ? (
-          <div className="empty-list">No chats yet. Start one above.</div>
+          <div className="empty-list">No chats yet.<br />Start one above.</div>
         ) : (
           conversations.map(conv => (
             <div
@@ -47,15 +42,14 @@ export default function Sidebar({ conversations, selectedId, onSelect, onNew, on
               onClick={() => onSelect(conv.id)}
               data-testid="conv-item"
             >
-              <FiMessageSquare className="icon" />
+              <FiMessageSquare className="conv-icon" size={13} />
               <span className="conv-title" title={conv.title}>{conv.title}</span>
               <button
                 className="conv-del"
                 onClick={e => { e.stopPropagation(); onDelete(conv.id) }}
-                title="Delete"
                 data-testid="conv-delete"
               >
-                <FiX />
+                <FiX size={13} />
               </button>
             </div>
           ))
@@ -64,16 +58,14 @@ export default function Sidebar({ conversations, selectedId, onSelect, onNew, on
 
       <div className="sidebar-footer">
         <button className="footer-btn" onClick={onSettings} data-testid="settings-btn">
-          <FiCpu className="icon" />
-          Model settings
+          <FiCpu size={14} /> Model settings
         </button>
         <button className="footer-btn" onClick={toggle} data-testid="theme-toggle">
-          {theme === 'dark' ? <FiSun className="icon" /> : <FiMoon className="icon" />}
+          {theme === 'dark' ? <FiSun size={14} /> : <FiMoon size={14} />}
           {theme === 'dark' ? 'Light mode' : 'Dark mode'}
         </button>
-        <button className="footer-btn" onClick={() => {}}>
-          <FiSettings className="icon" />
-          Preferences
+        <button className="footer-btn">
+          <FiSettings size={14} /> Preferences
         </button>
       </div>
     </aside>
