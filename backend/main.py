@@ -1,6 +1,5 @@
 import json
 import os
-from typing import Optional
 
 from fastapi import FastAPI, HTTPException, Depends
 from fastapi.middleware.cors import CORSMiddleware
@@ -20,7 +19,7 @@ from database import (
 )
 from models import ChatRequest, ConversationCreate, SettingsUpdate
 from agent import agent_stream
-from auth import get_current_user_id
+from auth import get_auth, AuthContext
 
 load_dotenv()
 
@@ -37,51 +36,51 @@ app.add_middleware(
 
 
 @app.get("/api/conversations")
-async def list_conversations(user_id: str = Depends(get_current_user_id)):
-    return await get_conversations(user_id)
+async def list_conversations(auth: AuthContext = Depends(get_auth)):
+    return await get_conversations(auth.token, auth.user_id)
 
 
 @app.post("/api/conversations")
 async def new_conversation(
-    body: ConversationCreate, user_id: str = Depends(get_current_user_id)
+    body: ConversationCreate, auth: AuthContext = Depends(get_auth)
 ):
-    return await create_conversation(user_id, body.title, body.model)
+    return await create_conversation(auth.token, auth.user_id, body.title, body.model)
 
 
 @app.delete("/api/conversations/{conv_id}")
-async def remove_conversation(
-    conv_id: str, user_id: str = Depends(get_current_user_id)
-):
-    await delete_conversation(user_id, conv_id)
+async def remove_conversation(conv_id: str, auth: AuthContext = Depends(get_auth)):
+    await delete_conversation(auth.token, auth.user_id, conv_id)
     return {"ok": True}
 
 
 @app.get("/api/conversations/{conv_id}/messages")
-async def list_messages(conv_id: str, user_id: str = Depends(get_current_user_id)):
-    return await get_messages(user_id, conv_id)
+async def list_messages(conv_id: str, auth: AuthContext = Depends(get_auth)):
+    return await get_messages(auth.token, auth.user_id, conv_id)
 
 
 @app.post("/api/chat")
-async def chat(req: ChatRequest, user_id: str = Depends(get_current_user_id)):
+async def chat(req: ChatRequest, auth: AuthContext = Depends(get_auth)):
+    token, user_id = auth.token, auth.user_id
+
     # Verify the conversation belongs to this user before doing anything.
-    conv = await get_conversation(user_id, req.conversation_id)
+    conv = await get_conversation(token, user_id, req.conversation_id)
     if conv is None:
         raise HTTPException(status_code=404, detail="Conversation not found")
 
-    settings = await get_user_settings(user_id)
-    history = await get_messages(user_id, req.conversation_id)
+    settings = await get_user_settings(token, user_id)
+    history = await get_messages(token, user_id, req.conversation_id)
 
     model = req.model if req.model != "auto" else settings.get("model", "mock")
     base_url = req.base_url or settings.get("base_url")
     # LLM API key never comes from the DB: per-request override or the server's own env key.
     api_key = req.api_key or os.getenv("OPENAI_API_KEY")
 
-    await add_message(user_id, req.conversation_id, "user", req.message)
+    await add_message(token, user_id, req.conversation_id, "user", req.message)
 
     if len(history) == 0:
         words = req.message.strip().split()
         title = " ".join(words[:6]) + ("..." if len(words) > 6 else "")
-        await update_conversation_title(user_id, req.conversation_id, title)
+        await update_conversation_title(token, user_id, req.conversation_id, title)
 
     collected_text = []
     collected_steps = []
@@ -114,6 +113,7 @@ async def chat(req: ChatRequest, user_id: str = Depends(get_current_user_id)):
         final_content = "".join(collected_text).strip()
         if final_content:
             await add_message(
+                token,
                 user_id,
                 req.conversation_id,
                 "assistant",
@@ -132,8 +132,8 @@ async def chat(req: ChatRequest, user_id: str = Depends(get_current_user_id)):
 
 
 @app.get("/api/settings")
-async def get_settings(user_id: str = Depends(get_current_user_id)):
-    s = await get_user_settings(user_id)
+async def get_settings(auth: AuthContext = Depends(get_auth)):
+    s = await get_user_settings(auth.token, auth.user_id)
     # Never returns an API key; keys are not persisted.
     return {
         "provider": s.get("provider", "mock"),
@@ -143,10 +143,10 @@ async def get_settings(user_id: str = Depends(get_current_user_id)):
 
 
 @app.post("/api/settings")
-async def update_settings(
-    body: SettingsUpdate, user_id: str = Depends(get_current_user_id)
-):
-    await update_user_settings(user_id, body.provider, body.model, body.base_url)
+async def update_settings(body: SettingsUpdate, auth: AuthContext = Depends(get_auth)):
+    await update_user_settings(
+        auth.token, auth.user_id, body.provider, body.model, body.base_url
+    )
     return {"ok": True}
 
 

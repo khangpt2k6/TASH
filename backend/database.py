@@ -1,24 +1,28 @@
 """Data access layer backed by Supabase Postgres.
 
-The backend uses the service_role client (which bypasses RLS), so EVERY function
-here scopes its query by `user_id`. Never expose a function that queries without
-a user_id filter. Supabase calls are synchronous, so they run in a worker thread
-to avoid blocking the FastAPI event loop.
+Every function builds a Supabase client scoped to the calling user's JWT, so
+Row Level Security enforces that only that user's rows are visible or writable.
+There is no service_role key: the backend cannot bypass RLS, which is exactly
+what we want. Supabase calls are synchronous, so they run in a worker thread to
+avoid blocking the FastAPI event loop.
+
+Each function takes `token` (the user's access token, used to build the client)
+and `user_id` (used to populate / filter the user_id column).
 """
 import asyncio
 from typing import List, Optional, Dict, Any
 
-from supabase_client import get_service_client
+from supabase_client import get_user_client
 
 
 # ---------------------------------------------------------------- conversations
 
 async def create_conversation(
-    user_id: str, title: str = "New Chat", model: str = "mock"
+    token: str, user_id: str, title: str = "New Chat", model: str = "mock"
 ) -> Dict[str, Any]:
     def _run():
         return (
-            get_service_client()
+            get_user_client(token)
             .table("conversations")
             .insert({"user_id": user_id, "title": title, "model": model})
             .execute()
@@ -28,10 +32,10 @@ async def create_conversation(
     return res.data[0]
 
 
-async def get_conversations(user_id: str) -> List[Dict[str, Any]]:
+async def get_conversations(token: str, user_id: str) -> List[Dict[str, Any]]:
     def _run():
         return (
-            get_service_client()
+            get_user_client(token)
             .table("conversations")
             .select("*")
             .eq("user_id", user_id)
@@ -43,10 +47,12 @@ async def get_conversations(user_id: str) -> List[Dict[str, Any]]:
     return res.data or []
 
 
-async def get_conversation(user_id: str, conv_id: str) -> Optional[Dict[str, Any]]:
+async def get_conversation(
+    token: str, user_id: str, conv_id: str
+) -> Optional[Dict[str, Any]]:
     def _run():
         return (
-            get_service_client()
+            get_user_client(token)
             .table("conversations")
             .select("*")
             .eq("id", conv_id)
@@ -59,10 +65,10 @@ async def get_conversation(user_id: str, conv_id: str) -> Optional[Dict[str, Any
     return res.data[0] if res.data else None
 
 
-async def delete_conversation(user_id: str, conv_id: str) -> None:
+async def delete_conversation(token: str, user_id: str, conv_id: str) -> None:
     def _run():
         return (
-            get_service_client()
+            get_user_client(token)
             .table("conversations")
             .delete()
             .eq("id", conv_id)
@@ -73,10 +79,12 @@ async def delete_conversation(user_id: str, conv_id: str) -> None:
     await asyncio.to_thread(_run)
 
 
-async def update_conversation_title(user_id: str, conv_id: str, title: str) -> None:
+async def update_conversation_title(
+    token: str, user_id: str, conv_id: str, title: str
+) -> None:
     def _run():
         return (
-            get_service_client()
+            get_user_client(token)
             .table("conversations")
             .update({"title": title})
             .eq("id", conv_id)
@@ -90,6 +98,7 @@ async def update_conversation_title(user_id: str, conv_id: str, title: str) -> N
 # --------------------------------------------------------------------- messages
 
 async def add_message(
+    token: str,
     user_id: str,
     conv_id: str,
     role: str,
@@ -107,18 +116,16 @@ async def add_message(
     }
 
     def _run():
-        return (
-            get_service_client().table("messages").insert(payload).execute()
-        )
+        return get_user_client(token).table("messages").insert(payload).execute()
 
     res = await asyncio.to_thread(_run)
     return res.data[0]
 
 
-async def get_messages(user_id: str, conv_id: str) -> List[Dict[str, Any]]:
+async def get_messages(token: str, user_id: str, conv_id: str) -> List[Dict[str, Any]]:
     def _run():
         return (
-            get_service_client()
+            get_user_client(token)
             .table("messages")
             .select("*")
             .eq("conversation_id", conv_id)
@@ -136,10 +143,10 @@ async def get_messages(user_id: str, conv_id: str) -> List[Dict[str, Any]]:
 DEFAULT_SETTINGS = {"provider": "mock", "model": "mock", "base_url": None}
 
 
-async def get_user_settings(user_id: str) -> Dict[str, Any]:
+async def get_user_settings(token: str, user_id: str) -> Dict[str, Any]:
     def _run():
         return (
-            get_service_client()
+            get_user_client(token)
             .table("user_settings")
             .select("*")
             .eq("user_id", user_id)
@@ -155,7 +162,7 @@ async def get_user_settings(user_id: str) -> Dict[str, Any]:
 
 
 async def update_user_settings(
-    user_id: str, provider: str, model: str, base_url: Optional[str]
+    token: str, user_id: str, provider: str, model: str, base_url: Optional[str]
 ) -> Dict[str, Any]:
     payload = {
         "user_id": user_id,
@@ -166,7 +173,7 @@ async def update_user_settings(
 
     def _run():
         return (
-            get_service_client()
+            get_user_client(token)
             .table("user_settings")
             .upsert(payload, on_conflict="user_id")
             .execute()
@@ -174,26 +181,3 @@ async def update_user_settings(
 
     res = await asyncio.to_thread(_run)
     return res.data[0]
-
-
-# ----------------------------------------------------------------- usage_events
-
-async def log_usage(
-    user_id: str,
-    conv_id: Optional[str],
-    model: Optional[str],
-    prompt_tokens: Optional[int] = None,
-    completion_tokens: Optional[int] = None,
-) -> None:
-    payload = {
-        "user_id": user_id,
-        "conversation_id": conv_id,
-        "model": model,
-        "prompt_tokens": prompt_tokens,
-        "completion_tokens": completion_tokens,
-    }
-
-    def _run():
-        return get_service_client().table("usage_events").insert(payload).execute()
-
-    await asyncio.to_thread(_run)
