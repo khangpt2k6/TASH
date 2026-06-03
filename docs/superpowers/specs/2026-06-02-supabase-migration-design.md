@@ -108,12 +108,18 @@ Existing `tash.db` has no users; not migrated. New chats start fresh in Supabase
 ## Implementation note (deviation from initial sketch)
 
 The initial sketch had the browser read conversations/messages directly from Supabase.
-The implementation instead routes ALL data operations through the FastAPI backend,
-which uses the service_role key after verifying the caller's JWT and scoping every
-query to that user's id. Rationale: a single source of truth for query logic, reuse of
-the existing streaming path, and no duplicate RLS-vs-service_role code. RLS stays
-enabled on every table as defense in depth (verified: anon reads return empty). Moving
-hot reads to a direct browser->Supabase path remains a future optimization.
+The implementation instead routes ALL data operations through the FastAPI backend.
+
+Crucially, the backend does NOT use a service_role key (that secret is not retrievable
+via MCP, and avoiding it is more secure anyway). Instead, the backend validates each
+request's JWT against GoTrue, then builds a per-request Supabase client authenticated
+with that user's JWT and forwards it to PostgREST. RLS enforces that a user can only
+touch their own rows - the backend cannot bypass RLS. The only key the backend needs is
+the public anon/publishable key.
+
+Verified: anon reads return empty (RLS blocks), JWT validation returns 200, and an
+authenticated user's INSERT + SELECT pass their RLS policies. Moving hot reads to a
+direct browser->Supabase path remains a future optimization.
 
 ## Out of scope (YAGNI for now)
 
