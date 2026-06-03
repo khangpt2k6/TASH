@@ -52,13 +52,16 @@ desktop.ini
 # ========================
 # IDE
 # ========================
-.vscode/
 .idea/
 *.swp
 *.swo
 *.suo
 .project
 .classpath
+
+# Playwright
+playwright-report/
+test-results/
 
 # ========================
 # Logs

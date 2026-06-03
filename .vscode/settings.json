@@ -1,0 +1,30 @@
+{
+  "files.watcherExclude": {
+    "**/node_modules/**": true,
+    "**/.venv/**": true,
+    "**/venv/**": true,
+    "**/__pycache__/**": true,
+    "**/*.pyc": true,
+    "**/dist/**": true,
+    "**/.vite/**": true,
+    "**/playwright-report/**": true,
+    "**/test-results/**": true
+  },
+  "files.exclude": {
+    "**/node_modules": true,
+    "**/__pycache__": true,
+    "**/*.pyc": true,
+    "**/.venv": true,
+    "**/playwright-report": true,
+    "**/test-results": true
+  },
+  "search.exclude": {
+    "**/node_modules": true,
+    "**/.venv": true,
+    "**/dist": true,
+    "**/__pycache__": true,
+    "**/playwright-report": true
+  },
+  "git.ignoreLimitWarning": true,
+  "git.countBadge": "tracked"
+}
