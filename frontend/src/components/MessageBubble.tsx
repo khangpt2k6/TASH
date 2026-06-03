@@ -1,76 +1,76 @@
 import ReactMarkdown from 'react-markdown'
 import remarkGfm from 'remark-gfm'
 import { Prism as SyntaxHighlighter } from 'react-syntax-highlighter'
-import { vscDarkPlus } from 'react-syntax-highlighter/dist/esm/styles/prism'
+import { oneLight } from 'react-syntax-highlighter/dist/esm/styles/prism'
+import { oneDark } from 'react-syntax-highlighter/dist/esm/styles/prism'
+import { GiDna2 } from 'react-icons/gi'
 import { Message } from '../types'
 import ToolSteps from './ToolSteps'
-
-interface Props {
-  message: Message
-  isStreaming?: boolean
-  streamingText?: string
-}
+import { useTheme } from '../contexts/ThemeContext'
 
 function CodeBlock({ className, children }: { className?: string; children: React.ReactNode }) {
+  const { theme } = useTheme()
   const match = /language-(\w+)/.exec(className || '')
-  const lang = match?.[1] ?? 'text'
-  const code = String(children).replace(/\n$/, '')
-
-  if (!match) {
-    return <code className={className}>{children}</code>
-  }
+  if (!match) return <code className={className}>{children}</code>
 
   return (
     <SyntaxHighlighter
-      style={vscDarkPlus}
-      language={lang}
+      style={theme === 'dark' ? oneDark : oneLight}
+      language={match[1]}
       PreTag="div"
       customStyle={{
         margin: '12px 0',
         borderRadius: '8px',
         fontSize: '12.5px',
         border: '1px solid var(--border)',
-        background: '#0d1117',
       }}
     >
-      {code}
+      {String(children).replace(/\n$/, '')}
     </SyntaxHighlighter>
   )
 }
 
-export default function MessageBubble({ message, isStreaming, streamingText }: Props) {
+interface Props {
+  message: Message
+  streamText?: string
+  isStreaming?: boolean
+}
+
+export default function MessageBubble({ message, streamText, isStreaming }: Props) {
   const isUser = message.role === 'user'
-  const displayContent = isStreaming ? (streamingText ?? '') : message.content
+  const content = isStreaming ? (streamText ?? '') : message.content
+
+  if (isUser) {
+    return (
+      <div className="msg-group">
+        <div className="msg-user-wrap">
+          <div className="msg-user-bubble" data-testid="user-message">{content}</div>
+        </div>
+      </div>
+    )
+  }
 
   return (
-    <div className="message-group">
-      <div className="message-header">
-        <div className={`message-avatar ${isUser ? 'avatar-user' : 'avatar-assistant'}`}>
-          {isUser ? 'U' : 'T'}
+    <div className="msg-group" data-testid="assistant-message">
+      <div className="assistant-label">
+        <div className="tash-avatar">
+          <GiDna2 size={11} />
         </div>
-        <span className="message-role-label">
-          {isUser ? 'You' : 'TASH'}
-        </span>
+        <span className="assistant-name">TASH</span>
       </div>
 
       {message.tool_steps && message.tool_steps.length > 0 && (
         <ToolSteps steps={message.tool_steps} />
       )}
 
-      <div className={`message-content ${isUser ? 'user-content' : ''}`}>
-        {isUser ? (
-          <span style={{ whiteSpace: 'pre-wrap' }}>{displayContent}</span>
-        ) : (
-          <>
-            <ReactMarkdown
-              remarkPlugins={[remarkGfm]}
-              components={{ code: CodeBlock as never }}
-            >
-              {displayContent}
-            </ReactMarkdown>
-            {isStreaming && <span className="streaming-cursor" />}
-          </>
-        )}
+      <div className="assistant-body">
+        <ReactMarkdown
+          remarkPlugins={[remarkGfm]}
+          components={{ code: CodeBlock as never }}
+        >
+          {content}
+        </ReactMarkdown>
+        {isStreaming && <span className="cursor" />}
       </div>
     </div>
   )

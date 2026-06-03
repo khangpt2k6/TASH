@@ -1,5 +1,7 @@
-import { Dna, Plus, MessageSquare, X, Settings, Cpu } from 'lucide-react'
+import { FiPlus, FiMessageSquare, FiX, FiSettings, FiCpu, FiSun, FiMoon } from 'react-icons/fi'
+import { GiDna2 } from 'react-icons/gi'
 import { Conversation } from '../types'
+import { useTheme } from '../contexts/ThemeContext'
 
 interface Props {
   conversations: Conversation[]
@@ -11,50 +13,49 @@ interface Props {
 }
 
 export default function Sidebar({ conversations, selectedId, onSelect, onNew, onDelete, onSettings }: Props) {
+  const { theme, toggle } = useTheme()
+
   return (
     <aside className="sidebar">
-      <div className="sidebar-header">
+      <div className="sidebar-top">
         <div className="logo">
           <div className="logo-icon">
-            <Dna size={16} strokeWidth={2} />
+            <GiDna2 size={14} />
           </div>
-          <div className="logo-text">
-            <span className="logo-name">TASH</span>
-            <span className="logo-sub">Aging Atlas AI</span>
+          <div>
+            <div className="logo-name">TASH</div>
+            <div className="logo-tag">Aging Atlas AI</div>
           </div>
         </div>
 
-        <button className="new-chat-btn" onClick={onNew}>
-          <Plus size={14} />
-          New Chat
+        <button className="new-chat-btn" onClick={onNew} data-testid="new-chat-btn">
+          <FiPlus size={14} />
+          New chat
         </button>
       </div>
 
-      <div className="sidebar-section-label">Chats</div>
+      <div className="sidebar-label">Chats</div>
 
-      <div className="sidebar-conversations">
+      <div className="sidebar-list">
         {conversations.length === 0 ? (
-          <div className="empty-convs">
-            No conversations yet.<br />Start a new chat above.
-          </div>
+          <div className="empty-list">No chats yet. Start one above.</div>
         ) : (
           conversations.map(conv => (
             <div
               key={conv.id}
               className={`conv-item ${conv.id === selectedId ? 'active' : ''}`}
               onClick={() => onSelect(conv.id)}
+              data-testid="conv-item"
             >
-              <MessageSquare size={13} className="conv-icon" />
+              <FiMessageSquare className="icon" />
               <span className="conv-title" title={conv.title}>{conv.title}</span>
               <button
-                className="conv-delete"
-                onClick={e => {
-                  e.stopPropagation()
-                  onDelete(conv.id)
-                }}
+                className="conv-del"
+                onClick={e => { e.stopPropagation(); onDelete(conv.id) }}
                 title="Delete"
+                data-testid="conv-delete"
               >
-                <X size={13} />
+                <FiX />
               </button>
             </div>
           ))
@@ -62,12 +63,16 @@ export default function Sidebar({ conversations, selectedId, onSelect, onNew, on
       </div>
 
       <div className="sidebar-footer">
-        <button className="footer-btn" onClick={onSettings}>
-          <Cpu size={14} />
-          Model Settings
+        <button className="footer-btn" onClick={onSettings} data-testid="settings-btn">
+          <FiCpu className="icon" />
+          Model settings
+        </button>
+        <button className="footer-btn" onClick={toggle} data-testid="theme-toggle">
+          {theme === 'dark' ? <FiSun className="icon" /> : <FiMoon className="icon" />}
+          {theme === 'dark' ? 'Light mode' : 'Dark mode'}
         </button>
         <button className="footer-btn" onClick={() => {}}>
-          <Settings size={14} />
+          <FiSettings className="icon" />
           Preferences
         </button>
       </div>

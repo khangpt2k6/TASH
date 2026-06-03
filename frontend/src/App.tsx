@@ -9,70 +9,43 @@ import { useChat } from './hooks/useChat'
 export default function App() {
   const [selectedId, setSelectedId] = useState<string | null>(null)
   const [showSettings, setShowSettings] = useState(false)
-  const [currentModel, setCurrentModel] = useState('mock')
+  const [model, setModel] = useState('mock')
 
-  const {
-    conversations,
-    fetchConversations,
-    createConversation,
-    deleteConversation,
-    refreshConversations,
-  } = useConversations()
-
-  const {
-    messages,
-    streaming,
-    isLoading,
-    loadMessages,
-    clearMessages,
-    sendMessage,
-    stopGeneration,
-  } = useChat()
+  const { conversations, fetchConversations, createConversation, deleteConversation, refreshConversations } = useConversations()
+  const { messages, streaming, isLoading, loadMessages, clearMessages, sendMessage, stopGeneration } = useChat()
 
   useEffect(() => {
     fetchConversations()
-    fetch('/api/settings')
-      .then(r => r.json())
-      .then(s => setCurrentModel(s.model ?? 'mock'))
-      .catch(() => {})
+    fetch('/api/settings').then(r => r.json()).then(s => setModel(s.model ?? 'mock')).catch(() => {})
   }, [fetchConversations])
 
-  const handleSelectConversation = useCallback(async (id: string) => {
+  const handleSelect = useCallback(async (id: string) => {
     setSelectedId(id)
     clearMessages()
     await loadMessages(id)
   }, [clearMessages, loadMessages])
 
-  const handleNewChat = useCallback(async () => {
-    const conv = await createConversation('New Chat', currentModel)
+  const handleNew = useCallback(async () => {
+    const conv = await createConversation('New Chat', model)
     setSelectedId(conv.id)
     clearMessages()
-  }, [createConversation, clearMessages, currentModel])
+  }, [createConversation, clearMessages, model])
 
   const handleDelete = useCallback(async (id: string) => {
     await deleteConversation(id)
-    if (selectedId === id) {
-      setSelectedId(null)
-      clearMessages()
-    }
+    if (selectedId === id) { setSelectedId(null); clearMessages() }
   }, [deleteConversation, selectedId, clearMessages])
 
   const handleSend = useCallback(async (text: string) => {
-    let convId = selectedId
-
-    if (!convId) {
-      const conv = await createConversation('New Chat', currentModel)
-      convId = conv.id
+    let id = selectedId
+    if (!id) {
+      const conv = await createConversation('New Chat', model)
+      id = conv.id
       setSelectedId(conv.id)
     }
-
-    await sendMessage(convId, text, currentModel)
+    await sendMessage(id, text, model)
     await refreshConversations()
-  }, [selectedId, createConversation, currentModel, sendMessage, refreshConversations])
-
-  const handlePrompt = useCallback((text: string) => {
-    handleSend(text)
-  }, [handleSend])
+  }, [selectedId, createConversation, model, sendMessage, refreshConversations])
 
   const selectedConv = conversations.find(c => c.id === selectedId)
   const headerTitle = selectedConv?.title ?? 'TASH - Single-Cell Aging AI'
@@ -82,19 +55,19 @@ export default function App() {
       <Sidebar
         conversations={conversations}
         selectedId={selectedId}
-        onSelect={handleSelectConversation}
-        onNew={handleNewChat}
+        onSelect={handleSelect}
+        onNew={handleNew}
         onDelete={handleDelete}
         onSettings={() => setShowSettings(true)}
       />
 
-      <div className="main-content">
+      <div className="main">
         <div className="chat-header">
           <span className="header-title">{headerTitle}</span>
-          <div className="header-actions">
-            <div className="model-badge">
-              <div className="model-dot" />
-              {currentModel === 'mock' ? 'Demo Mode' : currentModel}
+          <div className="header-right">
+            <div className="model-pill">
+              <div className="status-dot" />
+              {model === 'mock' ? 'Demo mode' : model}
             </div>
           </div>
         </div>
@@ -103,7 +76,7 @@ export default function App() {
           messages={messages}
           streaming={streaming}
           isLoading={isLoading}
-          onPrompt={handlePrompt}
+          onPrompt={handleSend}
           conversationId={selectedId}
         />
 
@@ -111,7 +84,6 @@ export default function App() {
           onSend={handleSend}
           onStop={stopGeneration}
           isLoading={isLoading}
-          disabled={false}
         />
       </div>
 
@@ -119,10 +91,7 @@ export default function App() {
         <SettingsModal
           onClose={() => {
             setShowSettings(false)
-            fetch('/api/settings')
-              .then(r => r.json())
-              .then(s => setCurrentModel(s.model ?? 'mock'))
-              .catch(() => {})
+            fetch('/api/settings').then(r => r.json()).then(s => setModel(s.model ?? 'mock')).catch(() => {})
           }}
         />
       )}

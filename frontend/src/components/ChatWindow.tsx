@@ -1,9 +1,9 @@
 import { useEffect, useRef } from 'react'
-import { Message } from '../types'
+import { Message, ToolStep } from '../types'
 import MessageBubble from './MessageBubble'
 import ToolSteps from './ToolSteps'
-import { ToolStep } from '../types'
 import WelcomeScreen from './WelcomeScreen'
+import { GiDna2 } from 'react-icons/gi'
 
 interface StreamingState {
   text: string
@@ -24,48 +24,61 @@ export default function ChatWindow({ messages, streaming, isLoading, onPrompt, c
 
   useEffect(() => {
     bottomRef.current?.scrollIntoView({ behavior: 'smooth' })
-  }, [messages, streaming?.text])
+  }, [messages.length, streaming?.text])
 
-  const showWelcome = !conversationId || messages.length === 0
+  const isEmpty = !conversationId || messages.length === 0
 
   return (
     <div className="chat-window">
-      {showWelcome ? (
+      {isEmpty ? (
         <WelcomeScreen onPrompt={onPrompt} />
       ) : (
-        <div className="messages-container">
+        <div className="messages-wrap">
           {messages.map(msg => (
             <MessageBubble key={msg.id} message={msg} />
           ))}
 
           {isLoading && streaming && (
             <>
-              {streaming.thinking && (
-                <div className="thinking-indicator">
-                  <div className="thinking-dots">
+              {streaming.thinking && !streaming.text && streaming.toolSteps.length === 0 && (
+                <div className="msg-group">
+                  <div className="assistant-label">
+                    <div className="tash-avatar"><GiDna2 size={11} /></div>
+                    <span className="assistant-name">TASH</span>
+                  </div>
+                  <div className="thinking">
                     <div className="thinking-dot" />
                     <div className="thinking-dot" />
                     <div className="thinking-dot" />
                   </div>
-                  <span>{streaming.thinking}</span>
                 </div>
               )}
 
               {streaming.toolSteps.length > 0 && (
-                <ToolSteps steps={streaming.toolSteps} />
+                <div className="msg-group">
+                  <div className="assistant-label">
+                    <div className="tash-avatar"><GiDna2 size={11} /></div>
+                    <span className="assistant-name">TASH</span>
+                  </div>
+                  <ToolSteps steps={streaming.toolSteps} />
+                  {streaming.text && (
+                    <div className="assistant-body" style={{ marginTop: 8 }}>
+                      {streaming.text}
+                      <span className="cursor" />
+                    </div>
+                  )}
+                </div>
               )}
 
-              {streaming.text && (
-                <div className="message-group">
-                  <div className="message-header">
-                    <div className="message-avatar avatar-assistant">T</div>
-                    <span className="message-role-label">TASH</span>
+              {streaming.text && streaming.toolSteps.length === 0 && (
+                <div className="msg-group">
+                  <div className="assistant-label">
+                    <div className="tash-avatar"><GiDna2 size={11} /></div>
+                    <span className="assistant-name">TASH</span>
                   </div>
-                  <div className="message-content">
-                    <span style={{ whiteSpace: 'pre-wrap' }}>
-                      {streaming.text}
-                    </span>
-                    <span className="streaming-cursor" />
+                  <div className="assistant-body">
+                    {streaming.text}
+                    <span className="cursor" />
                   </div>
                 </div>
               )}

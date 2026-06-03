@@ -1,45 +1,41 @@
-import { Dna } from 'lucide-react'
+import { GiDna2 } from 'react-icons/gi'
 
 interface Props {
   onPrompt: (text: string) => void
 }
 
-const SUGGESTIONS = [
-  { icon: '🔬', text: 'How do I perform clustering in Scanpy for scRNA-seq data?' },
-  { icon: '📊', text: 'Explain trajectory inference methods for aging analysis' },
-  { icon: '🧬', text: 'What are the key aging signatures in single-cell data?' },
-  { icon: '⚙️', text: 'Search for recent scGPT papers on aging cell atlas' },
+const CHIPS = [
+  { icon: '🔬', text: 'How do I cluster cells in Scanpy for aging analysis?' },
+  { icon: '🧬', text: 'What are the key hallmarks of aging at single-cell level?' },
+  { icon: '📊', text: 'Explain trajectory inference for aging cell populations' },
+  { icon: '🔍', text: 'Search recent scGPT papers on aging atlas' },
+  { icon: '⚙️', text: 'Write a Scanpy pipeline for PBMC aging study' },
   { icon: '💡', text: 'How to use Geneformer for cell type annotation?' },
-  { icon: '📈', text: 'Show me a Scanpy pipeline for PBMC aging analysis' },
 ]
 
 export default function WelcomeScreen({ onPrompt }: Props) {
   return (
     <div className="welcome">
       <div className="welcome-hero">
-        <div className="welcome-logo">
-          <Dna size={28} color="white" strokeWidth={1.8} />
+        <div className="welcome-icon-wrap">
+          <GiDna2 size={26} />
         </div>
         <div>
           <h1 className="welcome-title">
-            Welcome to <span>TASH</span>
+            Hello, I'm <span>TASH</span>
           </h1>
           <p className="welcome-sub">
-            AI agent for Single-Cell Aging Atlas Analysis. Ask about scRNA-seq workflows,
-            aging biology, or let me search the latest research.
+            AI research agent for Single-Cell Aging Atlas Analysis. Ask about scRNA-seq workflows,
+            aging biology, Scanpy, Seurat, Geneformer, or scGPT.
           </p>
         </div>
       </div>
 
-      <div className="welcome-chips">
-        {SUGGESTIONS.map((s, i) => (
-          <button
-            key={i}
-            className="welcome-chip"
-            onClick={() => onPrompt(s.text)}
-          >
-            <div className="chip-icon">{s.icon}</div>
-            <div className="chip-text">{s.text}</div>
+      <div className="chips">
+        {CHIPS.map((c, i) => (
+          <button key={i} className="chip" onClick={() => onPrompt(c.text)}>
+            <div className="chip-icon">{c.icon}</div>
+            <div className="chip-text">{c.text}</div>
           </button>
         ))}
       </div>

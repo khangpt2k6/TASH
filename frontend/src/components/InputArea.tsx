@@ -1,5 +1,5 @@
 import { useRef, useState, KeyboardEvent } from 'react'
-import { ArrowUp, Square } from 'lucide-react'
+import { FiArrowUp, FiSquare } from 'react-icons/fi'
 
 interface Props {
   onSend: (text: string) => void
@@ -10,27 +10,22 @@ interface Props {
 
 export default function InputArea({ onSend, onStop, isLoading, disabled }: Props) {
   const [value, setValue] = useState('')
-  const textareaRef = useRef<HTMLTextAreaElement>(null)
+  const ref = useRef<HTMLTextAreaElement>(null)
 
-  const handleSend = () => {
-    const trimmed = value.trim()
-    if (!trimmed || isLoading) return
-    onSend(trimmed)
+  const submit = () => {
+    const t = value.trim()
+    if (!t || isLoading) return
+    onSend(t)
     setValue('')
-    if (textareaRef.current) {
-      textareaRef.current.style.height = 'auto'
-    }
+    if (ref.current) ref.current.style.height = 'auto'
   }
 
-  const handleKeyDown = (e: KeyboardEvent<HTMLTextAreaElement>) => {
-    if (e.key === 'Enter' && !e.shiftKey) {
-      e.preventDefault()
-      handleSend()
-    }
+  const onKey = (e: KeyboardEvent<HTMLTextAreaElement>) => {
+    if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); submit() }
   }
 
-  const handleInput = () => {
-    const el = textareaRef.current
+  const onInput = () => {
+    const el = ref.current
     if (!el) return
     el.style.height = 'auto'
     el.style.height = Math.min(el.scrollHeight, 200) + 'px'
@@ -38,37 +33,37 @@ export default function InputArea({ onSend, onStop, isLoading, disabled }: Props
 
   return (
     <div className="input-area">
-      <div className="input-container">
+      <div className="input-inner">
         <div className="input-box">
           <textarea
-            ref={textareaRef}
-            className="input-textarea"
+            ref={ref}
+            className="input-ta"
             value={value}
             onChange={e => setValue(e.target.value)}
-            onKeyDown={handleKeyDown}
-            onInput={handleInput}
+            onKeyDown={onKey}
+            onInput={onInput}
             placeholder="Ask TASH about single-cell analysis, aging biology, Scanpy..."
             rows={1}
             disabled={disabled}
+            data-testid="chat-input"
           />
           {isLoading ? (
-            <button className="send-btn" onClick={onStop} title="Stop generating">
-              <Square size={14} />
+            <button className="send-btn" onClick={onStop} title="Stop" data-testid="stop-btn">
+              <FiSquare size={13} />
             </button>
           ) : (
             <button
               className="send-btn"
-              onClick={handleSend}
+              onClick={submit}
               disabled={!value.trim() || disabled}
               title="Send (Enter)"
+              data-testid="send-btn"
             >
-              <ArrowUp size={15} />
+              <FiArrowUp size={15} />
             </button>
           )}
         </div>
-        <p className="input-hint">
-          TASH uses AI agents with tool calling. Shift+Enter for newline.
-        </p>
+        <p className="input-hint">TASH · Shift+Enter for newline</p>
       </div>
     </div>
   )
