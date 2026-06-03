@@ -23,8 +23,9 @@ React frontend ──> Supabase Auth (login/signup, JWT held in browser)
 ```
 
 - **Auth**: Supabase Auth, email/password + Google OAuth. Frontend holds the session.
-- **Reads** (sidebar conversation list, message history): direct from Supabase with
-  RLS enforcing per-user isolation. Offloads read traffic from the Python server.
+- **Reads** (sidebar conversation list, message history): routed through the FastAPI
+  backend as a single trusted gateway (see "Implementation note" below). RLS still
+  enforces per-user isolation as defense in depth.
 - **Writes during chat**: go through FastAPI, where LLM streaming happens. The backend
   authenticates the user via JWT and writes using the service_role key.
 - **Settings**: per-user `user_settings` table replaces the global JSON file.
@@ -103,6 +104,16 @@ with both `USING` and `WITH CHECK` on writes. `profiles` keys on `id`. The backe
 ## Data migration
 
 Existing `tash.db` has no users; not migrated. New chats start fresh in Supabase.
+
+## Implementation note (deviation from initial sketch)
+
+The initial sketch had the browser read conversations/messages directly from Supabase.
+The implementation instead routes ALL data operations through the FastAPI backend,
+which uses the service_role key after verifying the caller's JWT and scoping every
+query to that user's id. Rationale: a single source of truth for query logic, reuse of
+the existing streaming path, and no duplicate RLS-vs-service_role code. RLS stays
+enabled on every table as defense in depth (verified: anon reads return empty). Moving
+hot reads to a direct browser->Supabase path remains a future optimization.
 
 ## Out of scope (YAGNI for now)
 
