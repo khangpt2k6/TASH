@@ -1,5 +1,5 @@
 import { FiPlus, FiMessageSquare, FiX, FiCpu, FiSun, FiMoon, FiLogOut } from 'react-icons/fi'
-import { GiDna2 } from 'react-icons/gi'
+import { TbDna2 } from 'react-icons/tb'
 import { Conversation } from '../types'
 import { useTheme } from '../contexts/ThemeContext'
 
@@ -20,7 +20,7 @@ export default function Sidebar({ conversations, selectedId, onSelect, onNew, on
   return (
     <aside className="sidebar">
       <div className="sidebar-logo">
-        <div className="logo-mark"><GiDna2 size={14} /></div>
+        <div className="logo-mark"><TbDna2 size={15} /></div>
         <div className="logo-words">
           <div className="logo-name">TASH</div>
           <div className="logo-sub">Aging Atlas AI</div>

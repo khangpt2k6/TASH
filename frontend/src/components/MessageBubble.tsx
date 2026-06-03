@@ -3,7 +3,7 @@ import remarkGfm from 'remark-gfm'
 import { Prism as SyntaxHighlighter } from 'react-syntax-highlighter'
 import { oneLight } from 'react-syntax-highlighter/dist/esm/styles/prism'
 import { oneDark } from 'react-syntax-highlighter/dist/esm/styles/prism'
-import { GiDna2 } from 'react-icons/gi'
+import { TbDna2 } from 'react-icons/tb'
 import { Message } from '../types'
 import ToolSteps from './ToolSteps'
 import { useTheme } from '../contexts/ThemeContext'
@@ -50,7 +50,7 @@ export default function MessageBubble({ message, streamText, isStreaming }: Prop
   return (
     <div className="msg-group" data-testid="assistant-message">
       <div className="assist-row">
-        <div className="tash-mark"><GiDna2 size={11} /></div>
+        <div className="tash-mark"><TbDna2 size={12} /></div>
         <span className="assist-name">TASH</span>
       </div>
 
