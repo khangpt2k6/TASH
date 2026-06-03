@@ -3,10 +3,14 @@ import Sidebar from './components/Sidebar'
 import ChatWindow from './components/ChatWindow'
 import InputArea from './components/InputArea'
 import SettingsModal from './components/SettingsModal'
+import AuthScreen from './components/AuthScreen'
 import { useConversations } from './hooks/useConversations'
 import { useChat } from './hooks/useChat'
+import { useAuth } from './contexts/AuthContext'
+import { apiFetch } from './lib/api'
 
 export default function App() {
+  const { session, user, loading: authLoading, signOut } = useAuth()
   const [selectedId, setSelectedId] = useState<string | null>(null)
   const [showSettings, setShowSettings] = useState(false)
   const [model, setModel] = useState('mock')
@@ -15,9 +19,10 @@ export default function App() {
   const { messages, streaming, isLoading, loadMessages, clearMessages, sendMessage, stopGeneration } = useChat()
 
   useEffect(() => {
+    if (!session) return
     fetchConversations()
-    fetch('/api/settings').then(r => r.json()).then(s => setModel(s.model ?? 'mock')).catch(() => {})
-  }, [fetchConversations])
+    apiFetch('/api/settings').then(r => r.json()).then(s => setModel(s.model ?? 'mock')).catch(() => {})
+  }, [session, fetchConversations])
 
   const handleSelect = useCallback(async (id: string) => {
     setSelectedId(id)
@@ -50,6 +55,14 @@ export default function App() {
   const selectedConv = conversations.find(c => c.id === selectedId)
   const headerTitle = selectedConv?.title ?? 'TASH - Single-Cell Aging AI'
 
+  if (authLoading) {
+    return <div className="app app-loading">Loading...</div>
+  }
+
+  if (!session) {
+    return <AuthScreen />
+  }
+
   return (
     <div className="app">
       <Sidebar
@@ -59,6 +72,8 @@ export default function App() {
         onNew={handleNew}
         onDelete={handleDelete}
         onSettings={() => setShowSettings(true)}
+        userEmail={user?.email ?? null}
+        onSignOut={signOut}
       />
 
       <div className="main">

@@ -1,5 +1,6 @@
 import { useState, useCallback, useRef } from 'react'
 import { Message, ToolStep, StreamEvent } from '../types'
+import { apiFetch } from '../lib/api'
 
 interface StreamingState {
   text: string
@@ -15,9 +16,9 @@ export function useChat() {
 
   const loadMessages = useCallback(async (conversationId: string) => {
     try {
-      const res = await fetch(`/api/conversations/${conversationId}/messages`)
+      const res = await apiFetch(`/api/conversations/${conversationId}/messages`)
       const data: Message[] = await res.json()
-      setMessages(data)
+      setMessages(Array.isArray(data) ? data : [])
     } catch (e) {
       console.error('Failed to load messages', e)
     }
@@ -50,7 +51,7 @@ export function useChat() {
     abortRef.current = new AbortController()
 
     try {
-      const res = await fetch('/api/chat', {
+      const res = await apiFetch('/api/chat', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ conversation_id: conversationId, message: content, model }),

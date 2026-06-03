@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react'
 import { FiX } from 'react-icons/fi'
 import { Settings } from '../types'
+import { apiFetch } from '../lib/api'
 
 interface Props { onClose: () => void }
 
@@ -25,7 +26,7 @@ export default function SettingsModal({ onClose }: Props) {
   const [saving, setSaving] = useState(false)
 
   useEffect(() => {
-    fetch('/api/settings').then(r => r.json()).then(setS).catch(() => {})
+    apiFetch('/api/settings').then(r => r.json()).then(setS).catch(() => {})
   }, [])
 
   const setProvider = (provider: string) => {
@@ -36,7 +37,7 @@ export default function SettingsModal({ onClose }: Props) {
   const save = async () => {
     setSaving(true)
     try {
-      await fetch('/api/settings', {
+      await apiFetch('/api/settings', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(s),

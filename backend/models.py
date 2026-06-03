@@ -35,5 +35,7 @@ class ConversationOut(BaseModel):
 class SettingsUpdate(BaseModel):
     provider: str = "ollama"
     model: str = "llama3.2"
+    # api_key is accepted for backward-compat but never persisted (keys are not
+    # stored server-side); pass it per-request on /api/chat instead.
     api_key: Optional[str] = None
     base_url: Optional[str] = "http://localhost:11434/v1"

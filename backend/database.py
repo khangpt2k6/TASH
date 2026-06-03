@@ -1,118 +1,199 @@
-import aiosqlite
-import uuid
-import json
-from datetime import datetime, timezone
+"""Data access layer backed by Supabase Postgres.
+
+The backend uses the service_role client (which bypasses RLS), so EVERY function
+here scopes its query by `user_id`. Never expose a function that queries without
+a user_id filter. Supabase calls are synchronous, so they run in a worker thread
+to avoid blocking the FastAPI event loop.
+"""
+import asyncio
 from typing import List, Optional, Dict, Any
 
-DB_PATH = "tash.db"
+from supabase_client import get_service_client
 
 
-async def init_db():
-    async with aiosqlite.connect(DB_PATH) as db:
-        await db.execute("""
-            CREATE TABLE IF NOT EXISTS conversations (
-                id TEXT PRIMARY KEY,
-                title TEXT NOT NULL,
-                model TEXT NOT NULL DEFAULT 'mock',
-                created_at TEXT NOT NULL,
-                updated_at TEXT NOT NULL
-            )
-        """)
-        await db.execute("""
-            CREATE TABLE IF NOT EXISTS messages (
-                id TEXT PRIMARY KEY,
-                conversation_id TEXT NOT NULL,
-                role TEXT NOT NULL,
-                content TEXT NOT NULL,
-                tool_steps TEXT,
-                created_at TEXT NOT NULL,
-                FOREIGN KEY (conversation_id) REFERENCES conversations(id) ON DELETE CASCADE
-            )
-        """)
-        await db.commit()
+# ---------------------------------------------------------------- conversations
 
-
-def now_iso() -> str:
-    return datetime.now(timezone.utc).isoformat()
-
-
-async def create_conversation(title: str = "New Chat", model: str = "mock") -> Dict[str, Any]:
-    conv_id = str(uuid.uuid4())
-    ts = now_iso()
-    async with aiosqlite.connect(DB_PATH) as db:
-        await db.execute(
-            "INSERT INTO conversations (id, title, model, created_at, updated_at) VALUES (?, ?, ?, ?, ?)",
-            (conv_id, title, model, ts, ts)
+async def create_conversation(
+    user_id: str, title: str = "New Chat", model: str = "mock"
+) -> Dict[str, Any]:
+    def _run():
+        return (
+            get_service_client()
+            .table("conversations")
+            .insert({"user_id": user_id, "title": title, "model": model})
+            .execute()
         )
-        await db.commit()
-    return {"id": conv_id, "title": title, "model": model, "created_at": ts, "updated_at": ts}
+
+    res = await asyncio.to_thread(_run)
+    return res.data[0]
 
 
-async def get_conversations() -> List[Dict[str, Any]]:
-    async with aiosqlite.connect(DB_PATH) as db:
-        db.row_factory = aiosqlite.Row
-        async with db.execute(
-            "SELECT * FROM conversations ORDER BY updated_at DESC"
-        ) as cursor:
-            rows = await cursor.fetchall()
-            return [dict(r) for r in rows]
-
-
-async def delete_conversation(conv_id: str):
-    async with aiosqlite.connect(DB_PATH) as db:
-        await db.execute("DELETE FROM conversations WHERE id = ?", (conv_id,))
-        await db.commit()
-
-
-async def update_conversation_title(conv_id: str, title: str):
-    async with aiosqlite.connect(DB_PATH) as db:
-        await db.execute(
-            "UPDATE conversations SET title = ?, updated_at = ? WHERE id = ?",
-            (title, now_iso(), conv_id)
+async def get_conversations(user_id: str) -> List[Dict[str, Any]]:
+    def _run():
+        return (
+            get_service_client()
+            .table("conversations")
+            .select("*")
+            .eq("user_id", user_id)
+            .order("updated_at", desc=True)
+            .execute()
         )
-        await db.commit()
 
+    res = await asyncio.to_thread(_run)
+    return res.data or []
+
+
+async def get_conversation(user_id: str, conv_id: str) -> Optional[Dict[str, Any]]:
+    def _run():
+        return (
+            get_service_client()
+            .table("conversations")
+            .select("*")
+            .eq("id", conv_id)
+            .eq("user_id", user_id)
+            .limit(1)
+            .execute()
+        )
+
+    res = await asyncio.to_thread(_run)
+    return res.data[0] if res.data else None
+
+
+async def delete_conversation(user_id: str, conv_id: str) -> None:
+    def _run():
+        return (
+            get_service_client()
+            .table("conversations")
+            .delete()
+            .eq("id", conv_id)
+            .eq("user_id", user_id)
+            .execute()
+        )
+
+    await asyncio.to_thread(_run)
+
+
+async def update_conversation_title(user_id: str, conv_id: str, title: str) -> None:
+    def _run():
+        return (
+            get_service_client()
+            .table("conversations")
+            .update({"title": title})
+            .eq("id", conv_id)
+            .eq("user_id", user_id)
+            .execute()
+        )
+
+    await asyncio.to_thread(_run)
+
+
+# --------------------------------------------------------------------- messages
 
 async def add_message(
+    user_id: str,
     conv_id: str,
     role: str,
     content: str,
-    tool_steps: Optional[List[Dict]] = None
+    tool_steps: Optional[List[Dict]] = None,
+    token_count: Optional[int] = None,
 ) -> Dict[str, Any]:
-    msg_id = str(uuid.uuid4())
-    ts = now_iso()
-    steps_json = json.dumps(tool_steps) if tool_steps else None
-    async with aiosqlite.connect(DB_PATH) as db:
-        await db.execute(
-            "INSERT INTO messages (id, conversation_id, role, content, tool_steps, created_at) VALUES (?, ?, ?, ?, ?, ?)",
-            (msg_id, conv_id, role, content, steps_json, ts)
-        )
-        await db.execute(
-            "UPDATE conversations SET updated_at = ? WHERE id = ?",
-            (ts, conv_id)
-        )
-        await db.commit()
-    return {
-        "id": msg_id,
+    payload = {
         "conversation_id": conv_id,
+        "user_id": user_id,
         "role": role,
         "content": content,
         "tool_steps": tool_steps,
-        "created_at": ts,
+        "token_count": token_count,
     }
 
+    def _run():
+        return (
+            get_service_client().table("messages").insert(payload).execute()
+        )
 
-async def get_messages(conv_id: str) -> List[Dict[str, Any]]:
-    async with aiosqlite.connect(DB_PATH) as db:
-        db.row_factory = aiosqlite.Row
-        async with db.execute(
-            "SELECT * FROM messages WHERE conversation_id = ? ORDER BY created_at ASC",
-            (conv_id,)
-        ) as cursor:
-            rows = await cursor.fetchall()
-            result = []
-            for r in rows:
-                d = dict(r)
-                d["tool_steps"] = json.loads(d["tool_steps"]) if d["tool_steps"] else None
-                result.append(d)
-            return result
+    res = await asyncio.to_thread(_run)
+    return res.data[0]
+
+
+async def get_messages(user_id: str, conv_id: str) -> List[Dict[str, Any]]:
+    def _run():
+        return (
+            get_service_client()
+            .table("messages")
+            .select("*")
+            .eq("conversation_id", conv_id)
+            .eq("user_id", user_id)
+            .order("created_at", desc=False)
+            .execute()
+        )
+
+    res = await asyncio.to_thread(_run)
+    return res.data or []
+
+
+# ---------------------------------------------------------------- user_settings
+
+DEFAULT_SETTINGS = {"provider": "mock", "model": "mock", "base_url": None}
+
+
+async def get_user_settings(user_id: str) -> Dict[str, Any]:
+    def _run():
+        return (
+            get_service_client()
+            .table("user_settings")
+            .select("*")
+            .eq("user_id", user_id)
+            .limit(1)
+            .execute()
+        )
+
+    res = await asyncio.to_thread(_run)
+    if res.data:
+        return res.data[0]
+    # Row is normally created by the signup trigger; fall back to defaults.
+    return {"user_id": user_id, **DEFAULT_SETTINGS}
+
+
+async def update_user_settings(
+    user_id: str, provider: str, model: str, base_url: Optional[str]
+) -> Dict[str, Any]:
+    payload = {
+        "user_id": user_id,
+        "provider": provider,
+        "model": model,
+        "base_url": base_url,
+    }
+
+    def _run():
+        return (
+            get_service_client()
+            .table("user_settings")
+            .upsert(payload, on_conflict="user_id")
+            .execute()
+        )
+
+    res = await asyncio.to_thread(_run)
+    return res.data[0]
+
+
+# ----------------------------------------------------------------- usage_events
+
+async def log_usage(
+    user_id: str,
+    conv_id: Optional[str],
+    model: Optional[str],
+    prompt_tokens: Optional[int] = None,
+    completion_tokens: Optional[int] = None,
+) -> None:
+    payload = {
+        "user_id": user_id,
+        "conversation_id": conv_id,
+        "model": model,
+        "prompt_tokens": prompt_tokens,
+        "completion_tokens": completion_tokens,
+    }
+
+    def _run():
+        return get_service_client().table("usage_events").insert(payload).execute()
+
+    await asyncio.to_thread(_run)

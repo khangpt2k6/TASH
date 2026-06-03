@@ -1,4 +1,4 @@
-import { FiPlus, FiMessageSquare, FiX, FiSettings, FiCpu, FiSun, FiMoon } from 'react-icons/fi'
+import { FiPlus, FiMessageSquare, FiX, FiCpu, FiSun, FiMoon, FiLogOut } from 'react-icons/fi'
 import { GiDna2 } from 'react-icons/gi'
 import { Conversation } from '../types'
 import { useTheme } from '../contexts/ThemeContext'
@@ -10,9 +10,11 @@ interface Props {
   onNew: () => void
   onDelete: (id: string) => void
   onSettings: () => void
+  userEmail: string | null
+  onSignOut: () => void
 }
 
-export default function Sidebar({ conversations, selectedId, onSelect, onNew, onDelete, onSettings }: Props) {
+export default function Sidebar({ conversations, selectedId, onSelect, onNew, onDelete, onSettings, userEmail, onSignOut }: Props) {
   const { theme, toggle } = useTheme()
 
   return (
@@ -64,9 +66,13 @@ export default function Sidebar({ conversations, selectedId, onSelect, onNew, on
           {theme === 'dark' ? <FiSun size={14} /> : <FiMoon size={14} />}
           {theme === 'dark' ? 'Light mode' : 'Dark mode'}
         </button>
-        <button className="footer-btn">
-          <FiSettings size={14} /> Preferences
-        </button>
+
+        <div className="sidebar-user">
+          {userEmail && <span className="user-email" title={userEmail}>{userEmail}</span>}
+          <button className="footer-btn" onClick={onSignOut} data-testid="sign-out-btn">
+            <FiLogOut size={14} /> Sign out
+          </button>
+        </div>
       </div>
     </aside>
   )

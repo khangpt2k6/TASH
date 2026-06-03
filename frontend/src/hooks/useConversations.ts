@@ -1,5 +1,6 @@
 import { useState, useCallback } from 'react'
 import { Conversation } from '../types'
+import { apiFetch } from '../lib/api'
 
 export function useConversations() {
   const [conversations, setConversations] = useState<Conversation[]>([])
@@ -7,9 +8,9 @@ export function useConversations() {
 
   const fetchConversations = useCallback(async () => {
     try {
-      const res = await fetch('/api/conversations')
+      const res = await apiFetch('/api/conversations')
       const data = await res.json()
-      setConversations(data)
+      setConversations(Array.isArray(data) ? data : [])
     } catch (e) {
       console.error('Failed to fetch conversations', e)
     }
@@ -18,7 +19,7 @@ export function useConversations() {
   const createConversation = useCallback(async (title = 'New Chat', model = 'mock') => {
     setLoading(true)
     try {
-      const res = await fetch('/api/conversations', {
+      const res = await apiFetch('/api/conversations', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ title, model }),
@@ -32,7 +33,7 @@ export function useConversations() {
   }, [])
 
   const deleteConversation = useCallback(async (id: string) => {
-    await fetch(`/api/conversations/${id}`, { method: 'DELETE' })
+    await apiFetch(`/api/conversations/${id}`, { method: 'DELETE' })
     setConversations(prev => prev.filter(c => c.id !== id))
   }, [])
 

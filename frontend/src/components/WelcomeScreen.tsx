@@ -1,14 +1,16 @@
-import { GiDna2 } from 'react-icons/gi'
+import { IconType } from 'react-icons'
+import { TbDna2, TbChartDots3, TbMicroscope, TbVectorSpline } from 'react-icons/tb'
+import { FiSearch, FiCode, FiGitMerge } from 'react-icons/fi'
 
 interface Props { onPrompt: (text: string) => void }
 
-const CHIPS = [
-  { icon: '🔬', text: 'How do I cluster cells in Scanpy for aging scRNA-seq data?' },
-  { icon: '🧬', text: 'What are the hallmarks of aging at single-cell resolution?' },
-  { icon: '📊', text: 'Explain trajectory inference for aging cell populations' },
-  { icon: '🔍', text: 'Search recent scGPT and Geneformer papers on aging' },
-  { icon: '⚙️', text: 'Write a Scanpy pipeline for PBMC aging study' },
-  { icon: '💡', text: 'How do I use scVI for batch correction across aging datasets?' },
+const CHIPS: { Icon: IconType; text: string }[] = [
+  { Icon: TbChartDots3,  text: 'How do I cluster cells in Scanpy for aging scRNA-seq data?' },
+  { Icon: TbMicroscope,  text: 'What are the hallmarks of aging at single-cell resolution?' },
+  { Icon: TbVectorSpline, text: 'Explain trajectory inference for aging cell populations' },
+  { Icon: FiSearch,      text: 'Search recent scGPT and Geneformer papers on aging' },
+  { Icon: FiCode,        text: 'Write a Scanpy pipeline for PBMC aging study' },
+  { Icon: FiGitMerge,    text: 'How do I use scVI for batch correction across aging datasets?' },
 ]
 
 export default function WelcomeScreen({ onPrompt }: Props) {
@@ -17,7 +19,7 @@ export default function WelcomeScreen({ onPrompt }: Props) {
       <div className="welcome-hero">
         <div className="welcome-logo-wrap">
           <div className="welcome-logo-bg">
-            <GiDna2 size={28} />
+            <TbDna2 size={28} />
           </div>
         </div>
         <div>
@@ -30,10 +32,10 @@ export default function WelcomeScreen({ onPrompt }: Props) {
       </div>
 
       <div className="chips">
-        {CHIPS.map((c, i) => (
-          <button key={i} className="chip" onClick={() => onPrompt(c.text)}>
-            <div className="chip-icon">{c.icon}</div>
-            <div className="chip-text">{c.text}</div>
+        {CHIPS.map(({ Icon, text }, i) => (
+          <button key={i} className="chip" onClick={() => onPrompt(text)}>
+            <div className="chip-icon"><Icon size={18} aria-hidden /></div>
+            <div className="chip-text">{text}</div>
           </button>
         ))}
       </div>
