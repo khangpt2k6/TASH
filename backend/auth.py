@@ -10,6 +10,7 @@ doesn't hit GoTrue every time.
 """
 import os
 import time
+from dataclasses import dataclass
 from typing import Dict
 
 import httpx
@@ -76,3 +77,28 @@ async def get_current_user_id(user: dict = Depends(get_current_user)) -> str:
             detail="Token did not resolve to a user id",
         )
     return uid
+
+
+@dataclass
+class AuthContext:
+    """The authenticated user's id plus their raw access token.
+
+    The token is forwarded to Supabase so PostgREST queries run under that
+    user's RLS context.
+    """
+
+    user_id: str
+    token: str
+
+
+async def get_auth(
+    creds: HTTPAuthorizationCredentials = Depends(_bearer),
+    user: dict = Depends(get_current_user),
+) -> AuthContext:
+    uid = user.get("id")
+    if not uid:
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Token did not resolve to a user id",
+        )
+    return AuthContext(user_id=uid, token=creds.credentials)

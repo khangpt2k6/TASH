@@ -1,10 +1,9 @@
 import { useState } from 'react'
 import { TbDna2 } from 'react-icons/tb'
-import { FcGoogle } from 'react-icons/fc'
 import { useAuth } from '../contexts/AuthContext'
 
 export default function AuthScreen() {
-  const { signInWithPassword, signUp, signInWithGoogle } = useAuth()
+  const { signInWithPassword, signUp } = useAuth()
   const [mode, setMode] = useState<'signin' | 'signup'>('signin')
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
@@ -31,12 +30,6 @@ export default function AuthScreen() {
     }
   }
 
-  const google = async () => {
-    setError(null)
-    const { error } = await signInWithGoogle()
-    if (error) setError(error)
-  }
-
   return (
     <div className="auth-screen" data-testid="auth-screen">
       <div className="auth-card">
@@ -52,12 +45,6 @@ export default function AuthScreen() {
         <p className="auth-subtitle">
           {mode === 'signin' ? 'Sign in to access your chats.' : 'Sign up to start chatting with TASH.'}
         </p>
-
-        <button type="button" className="auth-google" onClick={google} data-testid="google-btn">
-          <FcGoogle size={18} /> Continue with Google
-        </button>
-
-        <div className="auth-divider"><span>or</span></div>
 
         <form onSubmit={submit} className="auth-form">
           <label>Email</label>
