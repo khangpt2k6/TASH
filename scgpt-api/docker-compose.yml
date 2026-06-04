@@ -1,0 +1,60 @@
+# GPU + NVIDIA Container Toolkit required
+# Start: docker compose up --build
+
+services:
+  scgpt-api:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    image: scgpt-api:latest
+    container_name: scgpt-api
+    restart: unless-stopped
+
+    ports:
+      - "8000:8000"
+
+    # Mount mutable runtime data and the model weights as bind mounts so they
+    # outlive container rebuilds.
+    volumes:
+      - ./save:/app/save:ro
+      - ./cache:/app/cache
+      - ./outputs:/app/outputs
+      - ./logs:/app/logs
+      - ./config.yaml:/app/config.yaml:ro
+
+    environment:
+      - SCGPT_CONFIG=/app/config.yaml
+      - NVIDIA_VISIBLE_DEVICES=all
+      - NVIDIA_DRIVER_CAPABILITIES=compute,utility
+      # Helps PyTorch fragment less when batches vary in size.
+      - PYTORCH_CUDA_ALLOC_CONF=expandable_segments:True
+
+    # GPU reservation (NVIDIA Container Toolkit)
+    deploy:
+      resources:
+        reservations:
+          devices:
+            - driver: nvidia
+              count: 1
+              capabilities: [gpu]
+
+    # Docker daemon does the actual health check; same shape as the one
+    # baked into the image, repeated here so `docker compose ps` reports it.
+    healthcheck:
+      test: ["CMD-SHELL", "curl -sf http://127.0.0.1:8000/health || exit 1"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 120s
+
+    # Tighten the kernel limits a bit; scGPT inference is mostly GPU-bound.
+    ulimits:
+      memlock: -1
+      stack: 67108864
+    shm_size: "2gb"
+
+    logging:
+      driver: json-file
+      options:
+        max-size: "10m"
+        max-file: "5"

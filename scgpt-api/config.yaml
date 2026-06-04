@@ -1,0 +1,76 @@
+# scGPT API – application configuration
+#
+# All runtime behaviour is driven by this file. No values should be hardcoded
+# in the Python sources. Override individual values per environment by
+# mount another file, or: SCGPT_CONFIG=/path/to/config.yaml
+
+app:
+  name: scgpt-api
+  version: "1.0.0"
+  host: "0.0.0.0"
+  port: 8000
+  workers: 1                # MUST stay 1 – the model is a per-process singleton
+  request_timeout_seconds: 1800
+
+model:
+  # Directory holding args.json, vocab.json, best_model.pt
+  path: "save/scGPT_human"
+  pad_token: "<pad>"
+  pad_value: -2
+  special_tokens: ["<pad>", "<cls>", "<eoc>"]
+  # If true, the loader will silently drop weights that do not match the
+  # in-memory architecture (useful for checkpoints with head layers removed).
+  load_partial_state_dict: true
+
+inference:
+  batch_size: 64
+  max_seq_len: 1536
+  # Set to false to fall back to the stock PyTorch transformer when
+  # flash-attn is not available in the image. Production GPU images that ship
+  # flash-attn should set this to true for a large speedup.
+  use_fast_transformer: false
+  # Pre-processing applied to incoming AnnData before tokenisation.
+  preprocess:
+    normalize_total: 10000.0
+    log1p: true
+    n_bins: 51
+
+paths:
+  cache_dir: "cache/downloaded_datasets"
+  output_dir: "outputs"
+  log_dir: "logs"
+
+gpu:
+  required: true
+  device_id: 0
+  # Fraction of GPU memory PyTorch is allowed to reserve. Leave at 0 to
+  # disable. Useful when sharing a GPU between multiple replicas.
+  memory_fraction: 0.0
+
+download:
+  timeout_seconds: 600
+  max_size_gb: 10.0
+  # Reuse a previously downloaded dataset (keyed by the Google Drive file id)
+  # instead of downloading again. Saves time and Drive quota.
+  cache_enabled: true
+
+logging:
+  level: "INFO"
+  json: true
+  file: "logs/scgpt-api.log"
+  max_bytes: 10485760       # 10 MB per rotated file
+  backup_count: 5
+
+umap:
+  n_neighbors: 15
+  min_dist: 0.5
+  metric: "cosine"
+  # Columns to color the saved UMAP figure by, if they exist in adata.obs.
+  color_by: ["celltype", "batch", "tech"]
+  dpi: 150
+  figsize: [10, 8]
+
+jobs:
+  # How many finished jobs to keep in the in-memory store before evicting
+  # the oldest. Restart the service to clear all jobs.
+  max_history: 500

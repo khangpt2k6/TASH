@@ -1,0 +1,40 @@
+# scGPT API – Python dependencies (Python 3.11, CUDA 12.1)
+#
+# Strategy:
+#   - The packages WE call directly (FastAPI, Pydantic, gdown, PyYAML, etc.)
+#     are pinned tightly for reproducibility.
+#   - The scientific stack consumed by scGPT (scvi-tools, torchtext, scib,
+#     cell-gears, orbax, jax, ...) is intentionally NOT pinned here – scGPT
+#     0.2.4 carries its own (narrow) constraints and we let its resolver win.
+#     Adding our own pins on top would just produce ResolutionImpossible
+#     errors.
+#   - The Dockerfile installs torch/torchvision/torchaudio from the CUDA 12.1
+#     wheel index BEFORE this file is processed, so torch is not pinned here.
+#
+# Local install (Python 3.11):
+#   pip install torch==2.3.1 torchvision==0.18.1 torchaudio==2.3.1 -f https://download.pytorch.org/whl/cu121
+#   pip install -r requirements.txt
+
+# Web framework
+fastapi==0.115.6
+uvicorn[standard]==0.32.1
+pydantic==2.9.2
+
+# Config / utilities
+PyYAML==6.0.2
+python-multipart==0.0.12
+httpx==0.27.2
+
+# Google Drive download
+gdown==5.2.0
+
+# scGPT (pulls scanpy, anndata, numpy, pandas, scipy, scvi-tools,
+#     scikit-learn, matplotlib, umap-learn, leidenalg, torchtext,
+#     torch-geometric, cell-gears, scib, orbax, ... with the right pins)
+scgpt==0.2.4
+
+# scGPT 0.2.4 has an unconditional `from IPython import get_ipython` at
+# import time in scgpt/utils/util.py. Without IPython the package fails
+# to import even for non-notebook use. Add it explicitly so the server
+# can start.
+ipython==8.27.0
